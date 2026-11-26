@@ -11,7 +11,7 @@ Requires Node.js 26 (LTS), see `.nvmrc`.
 
 ```bash
 npm install
-npm run dev          # http://localhost:4321/fonepay-payment-gateway/
+npm run dev          # http://localhost:4321/
 ```
 
 | Command | Purpose |
@@ -33,9 +33,15 @@ Adding a gateway: see [`about/contributing`](src/content/docs/about/contributing
 
 ## Deploy
 
-`.github/workflows/deploy.yml` tests, builds and publishes to GitHub Pages on every push to `main`.
-Enable it once under **Settings > Pages > Source: GitHub Actions**.
-For a custom domain, update `site` and remove `base` in `astro.config.mjs`.
+Hosted on Cloudflare as a Workers static-assets site (`wrangler.jsonc`).
+
+```bash
+npx wrangler login      # or set CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID
+npm run deploy          # builds, then runs wrangler deploy
+```
+
+CI (`.github/workflows/ci.yml`) runs tests, typecheck, build and the link check on every push and pull request.
+To deploy automatically, connect the repository in the Cloudflare dashboard (Workers & Pages > Create > Import a repository) with build command `npm run build` and deploy command `npx wrangler deploy`.
 
 ## Never commit secrets
 
