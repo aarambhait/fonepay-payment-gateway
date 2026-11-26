@@ -1,0 +1,77 @@
+---
+title: Mobile deep links
+description: Open the customer's banking app from your Android, iOS or web checkout with the Fonepay intent deep link.
+sidebar:
+  order: 5
+---
+
+After the customer picks a bank, you open that bank's app with a deep link that carries the QR payload. The bank app reads it, shows the payment details, and the customer approves.
+
+## Deep link format
+
+```text
+<intentScheme>/?qrPayload=<qrMessage>
+```
+
+Where `intentScheme` comes from the [bank list](../bank-list/) (for example `LXBLNPKA://payment`) and `qrMessage` comes from [generate intent QR](../generate-intent-qr/).
+
+Fonepay's document shows the payload unencoded. A real `qrMessage` can contain spaces and symbols (merchant names, for example), so **URL-encode it**:
+
+```ts
+const link = buildDeepLink(bank.intentScheme, qr.qrMessage);
+// LXBLNPKA://payment/?qrPayload=0002010102...
+```
+
+## Recommended order
+
+1. Connect to the [WebSocket](../websocket/) first.
+2. Then open the bank app.
+3. When the customer comes back, [confirm with the status API](../payment-status/).
+
+## Android
+
+For extra security, Fonepay says to set the **bank's package name** (`packageName` from the bank list) on the intent. This makes sure that only that app can receive the payment data.
+
+```kotlin
+fun openIssuerApp(context: Context, deeplinkUrl: String, packageName: String): Boolean =
+    try {
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(deeplinkUrl)).apply {
+            setPackage(packageName)
+        }
+        context.startActivity(intent)
+        true
+    } catch (e: Exception) {
+        false // App not installed or cannot handle the link
+    }
+```
+
+On Android 11+ you may also need a `<queries>` entry in your manifest to see other apps. Check the Android documentation for package visibility.
+
+## iOS
+
+```swift
+func openIssuerApp(deeplinkUrl: String) -> Bool {
+    guard let url = URL(string: deeplinkUrl) else { return false }
+    UIApplication.shared.open(url, options: [:], completionHandler: nil)
+    return true
+}
+```
+
+If you check `canOpenURL` first, add each bank's scheme to `LSApplicationQueriesSchemes` in `Info.plist`.
+
+## Web
+
+In a mobile browser, navigate to the deep link (for example `window.location.href = link`). In a desktop browser, show the QR instead, because there is no banking app on the computer.
+
+## If the app isn't installed
+
+Show a clear message and let the customer pick another bank. Fonepay's brand guidelines include a "Mobile banking App not found" pattern with a **Try Again** action. See [brand guidelines](../brand-guidelines/).
+
+## Web-to-app vs app-to-app
+
+| Flow | Who opens the bank app | How you get the result |
+|---|---|---|
+| **Web-to-app** | Your website, via the deep link | WebSocket and your server's status API call |
+| **App-to-app** | Your mobile app, via an intent | The bank app returns remarks to your app. **Always verify with the status API** |
+
+In both flows Fonepay requires API verification before you treat a payment as complete.

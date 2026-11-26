@@ -1,0 +1,52 @@
+---
+title: Nepal Payment Docs
+description: Practical, community-written guides for integrating Nepal payment gateways. Start with Fonepay.
+template: splash
+hero:
+  tagline: Clear, tested, up-to-date integration guides for Nepal payment gateways, written for developers.
+  actions:
+    - text: Get started
+      link: getting-started/overview/
+      icon: right-arrow
+    - text: Fonepay docs
+      link: fonepay/
+      variant: minimal
+---
+
+import { Card, CardGrid } from "@astrojs/starlight/components";
+
+## Pick your path
+
+<CardGrid>
+  <Card title="I'm new here" icon="rocket">
+    Learn which product fits, how to get a merchant account and credentials, and who to contact.
+    [Start here](getting-started/overview/).
+  </Card>
+  <Card title="Fonepay Dynamic QR" icon="seti:json">
+    Generate a QR per order, listen on a WebSocket, confirm with the status API. HMAC-SHA512 signed.
+    [Read the guide](fonepay/dynamic-qr/overview/).
+  </Card>
+  <Card title="Checkout by Fonepay" icon="open-book">
+    Intent-based checkout: bank list, deep links into banking apps, QR on desktop. RSA-SHA256 signed.
+    [Read the guide](fonepay/checkout/overview/).
+  </Card>
+  <Card title="Something broke" icon="warning">
+    Decode common errors, signature mismatches and documentation gaps.
+    [Troubleshooting](guides/troubleshooting/).
+  </Card>
+</CardGrid>
+
+## What makes these docs different
+
+- **Every signing example is tested.** The code on these pages runs in CI against independently computed values.
+- **Documentation gaps are called out.** Vendor documents contradict themselves in places. We list them on a [known issues](fonepay/known-issues/) page so you can ask the right questions.
+- **No secrets, ever.** We use placeholders. Never paste real keys into any website or chat.
+
+## More gateways are coming
+
+This site is built to host several gateways side by side. Fonepay is first.
+Want to add another one? See [how to contribute](about/contributing/).
+
+:::caution[Unofficial]
+This is an independent community project. It is not affiliated with or endorsed by Fonepay. Always confirm details with the official documentation you receive from Fonepay or your bank. See the [disclaimer](about/disclaimer/).
+:::

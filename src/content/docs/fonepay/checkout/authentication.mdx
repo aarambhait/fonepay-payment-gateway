@@ -1,0 +1,90 @@
+---
+title: Authentication (login and RSA signing)
+description: Generate a key pair, sign Fonepay Checkout requests with RSA-SHA256, and obtain a JWT access token.
+sidebar:
+  order: 2
+---
+
+import { Code, Tabs, TabItem } from "@astrojs/starlight/components";
+import ts from "@examples/typescript/fonepay-checkout.ts?raw";
+import py from "@examples/python/checkout_signature.py?raw";
+
+Checkout by Fonepay uses two layers of authentication:
+
+1. **A JWT** from the login endpoint, sent as `Authorization: Bearer ...`.
+2. **A digital signature** of every request body, sent in the `signature` header, made with **your private key**.
+
+## 1. Create your key pair
+
+Per Fonepay's document, you sign with your private key and Fonepay verifies with your **public key**. So you generate a key pair and give Fonepay the public key. Ask Fonepay exactly which format and channel they want for the public key.
+
+```bash
+# 2048-bit RSA private key in PKCS8 PEM format
+openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out private.pem
+
+# Matching public key
+openssl pkey -in private.pem -pubout -out public.pem
+
+# Private key as Base64 without the PEM header/footer lines (what the code below expects)
+grep -v '^-----' private.pem | tr -d '\n' > private.b64
+```
+
+:::danger[Protect the private key]
+Keep it in a secrets manager or an environment variable on your server. Never commit it, never ship it in a mobile app or web page. The repository `.gitignore` for this site already excludes `*.pem` and `*.key`.
+:::
+
+## 2. How to sign
+
+| Item | Value |
+|---|---|
+| Algorithm | `SHA256withRSA` (RSASSA-PKCS1-v1_5 with SHA-256) |
+| What is signed | The **entire request body**, exactly as sent |
+| Key format | PKCS8 private key, Base64 or hex |
+| Output | Base64 string, placed in the `signature` header |
+
+:::caution[Whitespace matters]
+Sign the exact string you put on the wire. If you sign `{"a":1}` but your HTTP client sends `{ "a": 1 }`, verification fails. The safe pattern is: build the JSON string once, sign that string, send that same string.
+:::
+
+## 3. Log in
+
+`POST /login`
+
+| Header | Value |
+|---|---|
+| `Authorization` | `Basic base64(username:password)` |
+| `signature` | Signature of the body below |
+| `Content-Type` | `application/json` |
+
+```json title="Body"
+{ "username": "<your-username>", "password": "<your-password>" }
+```
+
+```json title="Response"
+{
+  "username": "<your-username>",
+  "accessToken": "Bearer eyJhbGciOi...",
+  "refreshToken": "eyJhbGciOi...",
+  "tokenType": "Bearer",
+  "expiresIn": 3600
+}
+```
+
+- `expiresIn` is in **seconds** (3600 = one hour).
+- In the document's sample, `accessToken` **already starts with `Bearer `**. The example code adds the prefix only if it is missing, so it works either way.
+- A `refreshToken` is returned but **no refresh endpoint is documented**. Log in again when the token expires.
+
+Cache the token on your server and refresh it a few minutes before it expires. Don't log in for every payment.
+
+## Code
+
+<Tabs>
+  <TabItem label="TypeScript">
+    <Code code={ts} lang="ts" title="fonepay-checkout.ts" />
+  </TabItem>
+  <TabItem label="Python">
+    <Code code={py} lang="python" title="checkout_signature.py" />
+  </TabItem>
+</Tabs>
+
+Next: [list banks](../bank-list/).

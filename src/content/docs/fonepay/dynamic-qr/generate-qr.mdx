@@ -1,0 +1,89 @@
+---
+title: Generate a QR
+description: Request a Dynamic QR from Fonepay, with parameters, example request and response, and error cases.
+sidebar:
+  order: 3
+---
+
+`POST {apiBase}/thirdPartyDynamicQrDownload`
+
+Creates a QR for one payment. Call it from your **server**.
+
+## Request body
+
+| Field | Format | Length | Required | Notes |
+|---|---|---|---|---|
+| `amount` | numeric | 1-10 | Yes | Digits `0`-`9` and at most one `.` as the decimal mark |
+| `remarks1` | alphanumeric | 1-25 | Yes | Narration of the transaction |
+| `remarks2` | alphanumeric | 1-25 | Yes | Additional narration |
+| `prn` | alphanumeric + special | 1-20 | Yes | Product/payment reference number. **Must be unique per request** |
+| `merchantCode` | alphanumeric | 1-15 | Yes | Provided by Fonepay |
+| `dataValidation` | string | | Yes | [HMAC-SHA512 signature](../authentication/) |
+| `username` | string | 1-55 | Yes | Provided by Fonepay |
+| `password` | string | 1-25 | Yes | Provided by Fonepay |
+| `taxAmount` | numeric | | No | Must not exceed `amount` |
+| `taxRefund` | numeric | | No | Must not exceed `taxAmount` |
+
+When you send `taxAmount` and `taxRefund`, include them in the signature too. See [Authentication](../authentication/).
+
+```json title="Request"
+{
+  "amount": "14",
+  "remarks1": "order 1001",
+  "remarks2": "web",
+  "prn": "PRN-1001",
+  "merchantCode": "TESTMERCHANT",
+  "dataValidation": "<hmac-sha512-hex>",
+  "username": "<your-username>",
+  "password": "<your-password>"
+}
+```
+
+## Success response
+
+```json
+{
+  "message": "successfull",
+  "qrMessage": "000201010212...6304d3f7",
+  "status": "CREATED",
+  "statusCode": 201,
+  "success": true,
+  "thirdpartyQrWebSocketUrl": "wss://dev-ws.fonepay.com/convergent-webSocket-web/merchantEndPoint/<device-id>/<merchant-code>/Y"
+}
+```
+
+- Render **`qrMessage`** as a QR code image with any QR library.
+- Open a WebSocket to **`thirdpartyQrWebSocketUrl`**. Always use the URL from the response.
+- The message text `successfull` (with two `l`s) is Fonepay's spelling. Don't compare against it. Check `success === true`.
+
+## Errors
+
+Failures come back with `errorCode` 406:
+
+```json
+{ "documentation": "Merchant request Exception", "errorCode": 406, "message": "Data Validation Failed" }
+```
+
+| `message` | Usual cause |
+|---|---|
+| `Data Validation Failed` | Wrong signature: key, value order, formatting or a changed amount |
+| `Invalid Merchant Code` | Wrong `merchantCode` or the wrong environment |
+| `Invalid username` | Wrong `username` or the wrong environment |
+
+## Code
+
+The `generateQr` function in [the example](../authentication/#code) signs and sends this request.
+
+```ts
+const qr = await generateQr(config, {
+  amount: "14",
+  prn: "PRN-1001",
+  remarks1: "order 1001",
+  remarks2: "web",
+});
+// Render qr.qrMessage as a QR image, then connect to qr.thirdpartyQrWebSocketUrl
+```
+
+:::tip[Make `prn` meaningful and unique]
+Store the `prn` against your order **before** calling Fonepay. You will need it to check status later and to reconcile payments. A UUID or `ORDER-<id>-<attempt>` works well within the 20-character limit.
+:::

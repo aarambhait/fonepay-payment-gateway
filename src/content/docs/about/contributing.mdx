@@ -1,0 +1,42 @@
+---
+title: Contributing
+description: How to fix a page or add documentation for another Nepal payment gateway.
+sidebar:
+  order: 1
+---
+
+This is an open, community-maintained site. Fixes, corrections and new gateways are welcome.
+
+## Fix or improve a page
+
+Every page has an **Edit page** link at the bottom. It opens the file on GitHub, where you can propose a change as a pull request. Source is on [GitHub](https://github.com/aarambhait/fonepay-payment-gateway).
+
+## Report a problem
+
+[Open an issue](https://github.com/aarambhait/fonepay-payment-gateway/issues) if something is wrong, outdated or missing. **Do not include real secrets.**
+
+## Add another gateway
+
+The site is organised by provider. To add one:
+
+1. Create a folder `src/content/docs/<provider>/` with an `index.mdx` overview and one page per topic. Use `sidebar.order` in each page's frontmatter to order them.
+2. Add a group for it in the `sidebar` of `astro.config.mjs`.
+3. Put runnable example code in `examples/` and test it in `tests/`. Pages import it with `?raw` so the docs and tests can't drift apart.
+4. Add a "Known issues" page for contradictions in the provider's documents.
+5. Run `npm test`, `npm run typecheck`, `npm run build` and `npm run check:links`.
+
+## Content rules
+
+- **No secrets.** Use placeholders such as `<your-username>`. Don't copy keys, tokens or passwords from vendor documents, even if they look like samples.
+- **No copied documents.** Summarise and explain in your own words. Don't redistribute vendor PDFs or brand assets.
+- **Verify, then write.** Prefer official documents. State the version and date of your source. If you tested something yourself, say so.
+- **Test code.** Signing examples need a test that checks an independently computed value.
+- **Mark uncertainty.** If the vendor's documentation is unclear, say so and add it to Known issues. Don't guess.
+
+## Local development
+
+```bash
+nvm use        # Node 26 (LTS), see .nvmrc
+npm install
+npm run dev    # http://localhost:4321/fonepay-payment-gateway/
+```

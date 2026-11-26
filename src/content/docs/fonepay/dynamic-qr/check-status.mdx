@@ -1,0 +1,52 @@
+---
+title: Check payment status
+description: Confirm a Fonepay Dynamic QR payment from your server with the status API.
+sidebar:
+  order: 5
+---
+
+`POST {apiBase}/thirdPartyDynamicQrGetStatus`
+
+Call this after a WebSocket event, or on a timer if the socket is silent. It is the source of truth for whether to fulfil an order.
+
+## Request body
+
+| Field | Format | Length | Required | Notes |
+|---|---|---|---|---|
+| `prn` | alphanumeric + special | 1-50 | Yes | The `prn` you sent when generating the QR |
+| `merchantCode` | alphanumeric | 1-15 | Yes | Provided by Fonepay |
+| `dataValidation` | string | | Yes | HMAC-SHA512 of `PRN,MERCHANT-CODE`. See [Authentication](../authentication/) |
+| `username` | string | 1-55 | Yes | Provided by Fonepay |
+| `password` | string | 1-25 | Yes | Provided by Fonepay |
+
+## Responses
+
+```json title="paymentStatus: success"
+{ "fonepayTraceId": 17404, "merchantCode": "TESTMERCHANT", "paymentStatus": "success", "prn": "PRN-1001" }
+```
+
+`paymentStatus` is one of:
+
+| Value | Meaning | What to do |
+|---|---|---|
+| `success` | Paid | Mark the order paid. Save `fonepayTraceId` |
+| `pending` | Not completed yet | Keep waiting or polling until your timeout |
+| `failed` | Failed or cancelled | Allow the customer to retry with a **new `prn`** |
+
+## Code
+
+```ts
+const { paymentStatus, fonepayTraceId } = await getQrStatus(config, "PRN-1001");
+
+if (paymentStatus === "success") {
+  await markOrderPaid("PRN-1001", fonepayTraceId);
+}
+```
+
+:::tip[Be idempotent]
+You may get several `success` responses and WebSocket events for the same order. Make "mark paid" safe to run twice, for example by keying on `prn`.
+:::
+
+:::caution[Compare the amount]
+The Dynamic QR status response does not echo the paid amount. Keep the amount you requested for each `prn` in your own database, and don't let the customer change it between generating the QR and confirming payment.
+:::

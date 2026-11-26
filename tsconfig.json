@@ -1,0 +1,11 @@
+{
+  "extends": "astro/tsconfigs/strict",
+  "include": ["examples", "tests", "src", ".astro/types.d.ts"],
+  "compilerOptions": {
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    "erasableSyntaxOnly": true,
+    "types": ["node"],
+    "paths": { "@examples/*": ["./examples/*"] }
+  }
+}

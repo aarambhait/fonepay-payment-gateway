@@ -1,0 +1,56 @@
+---
+title: Dynamic QR overview
+description: How Fonepay Dynamic QR works, the integration flow, environments and endpoints.
+sidebar:
+  order: 1
+---
+
+Dynamic QR generates a **unique QR code for each payment**. The customer scans it with any participating banking app, approves the payment, and Fonepay tells you the result.
+
+## Flow
+
+```text
+Merchant server                              Fonepay
+      |  1. POST thirdPartyDynamicQrDownload     |
+      |----------------------------------------->|
+      |  2. qrMessage + WebSocket URL            |
+      |<-----------------------------------------|
+      |  3. Open WebSocket, show the QR          |
+      |<=========================================|
+      |  4. "VERIFIED" (customer scanned)        |
+      |  5. payment result (paymentSuccess)      |
+      |  6. POST thirdPartyDynamicQrGetStatus    |
+      |----------------------------------------->|
+      |  7. paymentStatus: success/failed/pending|
+      |<-----------------------------------------|
+```
+
+1. [Generate the QR](../generate-qr/) from your server.
+2. Render `qrMessage` as a QR image and open the [WebSocket](../websocket/).
+3. When a message arrives, [check the status](../check-status/) from your server.
+4. Optionally, [report tax details](../tax-refund/) to Fonepay for IRD.
+
+## Environments
+
+The document names two environments. The exact paths below are copied from it.
+
+| | Dev (testing) | Live |
+|---|---|---|
+| API base | `https://dev-merchantapi.fonepay.com/convergent-merchant-web/api/merchant/merchantDetailsForThirdParty` | `https://merchantapi.fonepay.com/api/merchant/merchantDetailsForThirdParty` |
+| WebSocket host | `wss://dev-ws.fonepay.com/convergent-webSocket-web/merchantEndPoint` | `wss://ws.fonepay.com/convergent-webSocket-web/merchantEndPoint` |
+
+:::caution[Confirm the live path]
+In one place the Fonepay document shows the live URL **with** `/convergent-merchant-web/` and in another **without** it. Confirm your production URL with Fonepay before go-live. See [known issues](../../known-issues/).
+:::
+
+## Endpoints
+
+All are `POST` requests with a JSON body, relative to the API base.
+
+| Purpose | Path |
+|---|---|
+| Generate a QR | `/thirdPartyDynamicQrDownload` |
+| Check payment status | `/thirdPartyDynamicQrGetStatus` |
+| Post tax refund details | `/thirdPartyPostTaxRefund` |
+
+Every request carries your `merchantCode`, `username`, `password` and a `dataValidation` signature. Read [Authentication](../authentication/) next.

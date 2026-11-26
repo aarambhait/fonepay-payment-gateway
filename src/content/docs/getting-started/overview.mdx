@@ -1,0 +1,42 @@
+---
+title: Choose a product
+description: Fonepay offers two ways to accept online payments. Compare Dynamic QR and Checkout by Fonepay and pick the right one.
+sidebar:
+  order: 1
+---
+
+Fonepay lets customers pay from any participating mobile banking app or wallet. For online merchants it offers two integrations. They look similar from the outside, but they authenticate differently and have different endpoints, so pick one before you write code.
+
+## Quick comparison
+
+| | **Dynamic QR** | **Checkout by Fonepay** |
+|---|---|---|
+| Customer experience | Scans a QR shown on your page with a banking app | Picks a bank in your UI, is deep-linked into that bank's app (mobile) or scans a QR (desktop) |
+| Best for | Websites, kiosks and POS-style screens | E-commerce sites and apps that want fewer steps on mobile |
+| Request signing | `HMAC-SHA512` with a shared **secret key** | `RSA-SHA256` with **your private key** |
+| Login | Username and password inside every request body | OAuth-style login that returns a JWT valid for 3600 s |
+| Credentials you receive | Merchant code, username, password, secret key | Username, password, terminal ID. You send Fonepay your public key |
+| Payment result | WebSocket event, then confirm with the status API | WebSocket event, then confirm with the status API |
+| Extras | Optional tax refund fields and an IRD reporting API | Bank list API, mobile deep links, brand guidelines |
+
+:::tip[Not sure?]
+If your customers mostly pay on mobile and you want the smoothest flow, choose **Checkout by Fonepay**. If you need the simplest integration or a QR-only screen, choose **Dynamic QR**. You can ask Fonepay or your bank which products your merchant account is enabled for.
+:::
+
+## The shared mental model
+
+Both products follow the same four steps:
+
+1. **Your server** asks Fonepay to create a payment QR for one order, using a unique reference (called `prn` or `referenceLabel`).
+2. **Your page or app** shows that QR, or deep-links the customer into their banking app.
+3. **The customer** approves the payment in their banking app. Fonepay pushes the result to your **WebSocket**.
+4. **Your server** calls the **status API** to confirm the payment before marking the order as paid.
+
+:::danger[Never trust the WebSocket alone]
+A WebSocket message is a hint that something changed. Fonepay's own documents say to verify with the status API. Only your server-side status check should mark an order as paid.
+:::
+
+## Next steps
+
+- [Get a merchant account and credentials](../onboarding/)
+- Build with [Dynamic QR](../../fonepay/dynamic-qr/overview/) or [Checkout by Fonepay](../../fonepay/checkout/overview/)

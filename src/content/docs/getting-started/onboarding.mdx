@@ -1,0 +1,83 @@
+---
+title: Get an account and credentials
+description: How to become a Fonepay merchant, which credentials you need for integration, and who to contact.
+sidebar:
+  order: 2
+---
+
+Fonepay does not publish its developer documentation or a self-serve sandbox on its public website. You get both through onboarding. This page explains the path as far as it can be verified, and tells you what to ask for.
+
+:::note[Last verified]
+Contact details and the enrollment form below were checked on **26 November 2026** at [fonepay.com](https://fonepay.com). They can change, so check the official site before you rely on them.
+:::
+
+## Step 1: Become a Fonepay merchant
+
+Fonepay QR is issued through partner banks and wallets. There are two entry points:
+
+1. **Enrollment form.** Submit the "Request Fonepay QR" form at [fonepay.com/business/merchant-enrollment](https://fonepay.com/business/merchant-enrollment). It asks for:
+   - the owner's full name, citizenship number, mobile number and email
+   - business name, city, and business type (retail, restaurant or cafe, service, e-commerce, other)
+   - whether the business is **PAN** or **non-PAN**
+   - your preferred bank or e-wallet for QR issuance
+2. **Through your bank.** Fonepay's own pages tell merchants to contact their bank or the Fonepay team to integrate. If you already bank with a Fonepay member bank, start with its merchant services team.
+
+The enrollment page does not list the supporting documents you will need. Ask your bank or Fonepay for the current list.
+
+## Step 2: Ask for integration access
+
+Once you are a merchant, tell your bank or Fonepay that you want to **integrate online**, and say which product you want. Ask for:
+
+<ul>
+  <li>The <strong>official API document</strong> for your product (check the version number and date).</li>
+  <li><strong>Test (UAT / dev) credentials</strong> and the test base URLs.</li>
+  <li><strong>Production credentials</strong> and base URLs, and the go-live process.</li>
+  <li>The <strong>IP allowlist</strong> process, if any, for your servers.</li>
+</ul>
+
+### What you will receive
+
+| Product | Typical credentials |
+|---|---|
+| Dynamic QR | `merchantCode`, `username`, `password`, and a **secret key** shown on your merchant profile page after you log in |
+| Checkout by Fonepay | `username`, `password`, `terminalId`. You generate an RSA key pair and share the **public key** with Fonepay |
+
+Treat all of these as secrets. See [security best practices](../../guides/security/).
+
+## Step 3: Contact Fonepay
+
+| Channel | Details |
+|---|---|
+| Phone | [01-15970044](tel:+97715970044) |
+| Toll free (NTC only) | [1660-01-34244](tel:16600134244) |
+| Viber support | [3424-43-4244](viber://chat?number=3424434244) |
+| Support and complaints portal | [complain.fonepay.com](https://complain.fonepay.com) |
+
+The website also lists an email address for support, but it is obfuscated on the page, so copy it from [fonepay.com](https://fonepay.com) directly.
+
+## A message template that gets answers
+
+When you contact your bank or Fonepay, being specific saves rounds of back and forth:
+
+```text
+Subject: Online integration request - <your business name> (merchant code <code if you have it>)
+
+Hello,
+
+We are a Fonepay merchant and want to accept online payments on our website/app.
+We would like to integrate <Dynamic QR | Checkout by Fonepay>.
+
+Please share:
+1. The latest official API document and version.
+2. Test (UAT) credentials and base URLs.
+3. How and where to find / submit our keys (secret key or public key).
+4. The production base URLs and your go-live checklist.
+5. Whether our server IPs must be allowlisted.
+6. The tax refund (IRD) reporting requirement for Dynamic QR, if it applies to us.
+
+Thank you.
+```
+
+## Step 4: Build and test
+
+Follow the guide for your product, then run through the [go-live checklist](../../guides/go-live-checklist/).

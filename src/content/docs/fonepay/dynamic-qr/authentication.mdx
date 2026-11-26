@@ -1,0 +1,68 @@
+---
+title: Authentication (HMAC-SHA512)
+description: How to build the dataValidation signature for Fonepay Dynamic QR requests, with tested code.
+sidebar:
+  order: 2
+---
+
+import { Code, Tabs, TabItem } from "@astrojs/starlight/components";
+import ts from "@examples/typescript/fonepay-dynamic-qr.ts?raw";
+import py from "@examples/python/dynamic_qr_signature.py?raw";
+
+Each Dynamic QR request includes a field named **`dataValidation`**. It is an **HMAC-SHA512** of selected request values, keyed with your **secret key**. Fonepay recomputes it and rejects the request with `Data Validation Failed` if it differs.
+
+Your secret key is on your merchant profile page after you log in.
+
+:::danger[Server side only]
+Generate the signature on your backend. Never put the secret key, username or password in a website's JavaScript or in a mobile app.
+:::
+
+## The message to sign
+
+Join the values with a **comma**. No spaces, no URL-encoding, no quotes.
+
+| Request | Message |
+|---|---|
+| Generate QR | `AMOUNT,PRN,MERCHANT-CODE,REMARKS1,REMARKS2` |
+| Generate QR with tax | `AMOUNT,PRN,MERCHANT-CODE,REMARKS1,REMARKS2,TAXAMOUNT,TAXREFUND` |
+| Check status | `PRN,MERCHANT-CODE` |
+| Post tax refund | `fonepayTraceId,merchantPRN,invoiceNumber,invoiceDate,transactionAmount,merchantCode` |
+
+The output is the **lowercase hex** digest (128 characters).
+
+:::tip[Sign exactly what you send]
+If your body says `"amount": "14"`, sign `14`, not `14.00`. Any difference in a value, its order or its spelling changes the signature.
+:::
+
+## Worked example
+
+Using a made-up key (never use real secrets in examples):
+
+```text
+key     = test-secret-key
+message = 14,PRN-1001,TESTMERCHANT,order 1001,web
+dataValidation =
+ad31dd17cb62cbc9a0981ea7eb00d99752fc75a88096045be3f814842dadc84a
+b231e7eb6bee6f866a521ba46084db1b4b0d6011dae9d42d1400ba548acdc493
+```
+
+The digest is shown on two lines for readability. It is one string. You can reproduce this value with the code below. It is also asserted in this site's test suite.
+
+## Code
+
+<Tabs>
+  <TabItem label="TypeScript">
+    <Code code={ts} lang="ts" title="fonepay-dynamic-qr.ts" />
+  </TabItem>
+  <TabItem label="Python">
+    <Code code={py} lang="python" title="dynamic_qr_signature.py" />
+  </TabItem>
+  <TabItem label="Command line">
+    ```bash
+    printf '%s' '14,PRN-1001,TESTMERCHANT,order 1001,web' \
+      | openssl dgst -sha512 -hmac 'test-secret-key'
+    ```
+  </TabItem>
+</Tabs>
+
+If the signature still fails, see [Troubleshooting](../../../guides/troubleshooting/).

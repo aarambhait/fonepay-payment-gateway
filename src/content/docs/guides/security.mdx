@@ -1,0 +1,49 @@
+---
+title: Security best practices
+description: Keep keys safe and avoid fake payments when integrating Fonepay or any payment gateway.
+sidebar:
+  order: 2
+---
+
+Payment bugs cost real money. These rules apply to every gateway, and Fonepay's documents echo several of them.
+
+## Keep secrets on the server
+
+- The Dynamic QR **secret key**, `username` and `password`, and the Checkout **private key** must live only on your backend.
+- Load them from environment variables or a secrets manager. Never commit them.
+- Never place them in front-end JavaScript, mobile apps, HTML or API responses to browsers.
+- Rotate them if you ever suspect exposure, and ask Fonepay how.
+- Don't paste real credentials into AI tools, forum posts, screenshots or GitHub issues.
+
+## Don't trust the client
+
+The browser can lie. Your order total, `amount`, `prn` and "paid" state must come from your server.
+
+- Create the Fonepay request on the server using the price in **your** database.
+- Mark an order paid only after **your server** gets `success` from the status API.
+- Compare the paid amount with the order total (Checkout returns `totalTransactionAmount`).
+
+## Make payments idempotent
+
+You will receive duplicate WebSocket events and repeated status results. Handle them gracefully:
+
+- Key the "mark paid" operation on your order ID and `prn` or `referenceLabel`.
+- Use a database unique constraint on the payment reference.
+- Fulfil an order only once.
+
+## One reference per attempt
+
+Never reuse a `prn` or `referenceLabel`. Create a new one for every attempt, and store the mapping to your order.
+
+## Log carefully
+
+- **Do** log reference numbers, status and Fonepay trace IDs.
+- **Don't** log passwords, secret keys, private keys, full tokens or full signatures.
+
+## Transport
+
+Always use HTTPS and `wss://`. Verify TLS certificates. Don't disable verification to "get it working".
+
+## Reconcile
+
+Compare your orders against Fonepay's settlement reports regularly. Ask Fonepay how to get them.

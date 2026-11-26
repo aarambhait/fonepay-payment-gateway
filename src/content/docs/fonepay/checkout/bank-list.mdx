@@ -1,0 +1,54 @@
+---
+title: Bank list
+description: Fetch the banks and wallets that support Checkout by Fonepay, with deep link schemes and Android package names.
+sidebar:
+  order: 3
+---
+
+`GET /banks/list`
+
+Returns the banks and wallets your customer can choose from. Display these in your checkout UI. The response also tells you how to open each bank's app.
+
+## Headers
+
+| Header | Required | Description |
+|---|---|---|
+| `Authorization` | Yes | `Bearer <JWT>` from [login](../authentication/#3-log-in) |
+| `paymentMode` | No | Use `INTENT` for intent-based payments |
+| `mobileNo` | No | Customer mobile number. Must be valid if sent |
+| `signature` | No | Signature generated as in [Authentication](../authentication/) |
+
+## Response
+
+```json
+{
+  "bankDetails": [
+    {
+      "bankName": "Laxmi Sunrise",
+      "bankCode": "LXBLNPKA",
+      "bankIcon": "https://.../laxmi-sunrise-orange.png",
+      "packageName": "com.lxblnpka.app",
+      "intentScheme": "LXBLNPKA://payment"
+    }
+  ]
+}
+```
+
+| Field | Description |
+|---|---|
+| `bankName` | Display name |
+| `bankCode` | Unique bank identifier |
+| `bankIcon` | URL of the bank's logo |
+| `packageName` | **Android** package name of the bank app |
+| `intentScheme` | Deep link scheme used to start payment in the bank app |
+
+## Code
+
+```ts
+const token = await login(config);
+const banks = await listBanks(config, token);
+```
+
+## UI notes
+
+Fonepay's [brand guidelines](../brand-guidelines/) require a **search bar at the top** of the bank list, undistorted bank logos, and a friendly error when an app is not installed.

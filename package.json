@@ -1,0 +1,26 @@
+{
+  "name": "nepal-payment-gateway-docs",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Community developer documentation for Nepal payment gateways, starting with Fonepay.",
+  "engines": {
+    "node": ">=26"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test \"tests/*.test.ts\"",
+    "check:links": "node scripts/check-links.mjs"
+  },
+  "dependencies": {
+    "@astrojs/starlight": "^0.43.1",
+    "astro": "^7.4.13"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.11",
+    "typescript": "^7.0.2"
+  }
+}

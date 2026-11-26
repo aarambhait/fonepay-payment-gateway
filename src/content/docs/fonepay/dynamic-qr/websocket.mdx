@@ -1,0 +1,72 @@
+---
+title: WebSocket notifications
+description: How to receive QR scanned and payment result events from Fonepay for Dynamic QR.
+sidebar:
+  order: 4
+---
+
+After you generate a QR, connect to the WebSocket URL from the response (`thirdpartyQrWebSocketUrl`). Fonepay sends events here when the customer scans and pays.
+
+| Environment | URL prefix |
+|---|---|
+| Dev | `wss://dev-ws.fonepay.com/convergent-webSocket-web/merchantEndPoint/` |
+| Live | `wss://ws.fonepay.com/convergent-webSocket-web/merchantEndPoint/` |
+
+The full URL looks like `.../merchantEndPoint/<device-id>/<merchant-code>/Y`. Don't build it yourself. Use the one returned for that QR.
+
+## Message shapes
+
+Each frame is JSON, but the interesting part, `transactionStatus`, is a **JSON string inside JSON**. Parse twice.
+
+```json title="QR scanned"
+{
+  "merchantId": 70,
+  "deviceId": "<device-id>",
+  "transactionStatus": "{\"success\":true,\"message\":\"VERIFIED\",\"qrVerified\":true}"
+}
+```
+
+```json title="Payment result (after parsing transactionStatus)"
+{
+  "traceId": 17015,
+  "remarks1": "order 1001",
+  "remarks2": "web",
+  "transactionDate": "Apr 11, 2019 1:43:23 PM",
+  "productNumber": "PRN-1001",
+  "amount": "14",
+  "message": "Request Complete",
+  "success": true,
+  "commissionType": "CHARGE",
+  "commissionAmount": 0.0,
+  "totalCalculatedAmount": 14.0,
+  "paymentSuccess": true
+}
+```
+
+- `productNumber` is your `prn`.
+- Read **`paymentSuccess`** to see if the payment worked. A cancelled payment arrives with `paymentSuccess: false` and `message: "Request Failed"`.
+- `traceId` is the Fonepay trace ID you need for [tax refund reporting](../tax-refund/).
+
+## Parsing example
+
+```ts
+import { parseSocketMessage } from "./fonepay-dynamic-qr.ts";
+
+socket.addEventListener("message", async (event) => {
+  const message = parseSocketMessage(String(event.data));
+  if (message.kind === "payment") {
+    // Do not trust this alone: confirm with the status API on your server.
+    await confirmOnServer(message.prn);
+  }
+});
+```
+
+## Rules of thumb
+
+:::danger[Treat WebSocket events as hints]
+Fonepay's document says to call the status API after a WebSocket message. Do that from your **server** and only then mark the order paid.
+:::
+
+- **Handle disconnects.** If the socket drops or never delivers, poll the [status API](../check-status/) every few seconds until `success` or `failed`, with a sensible timeout.
+- **Set an expiry.** Decide how long a QR stays valid in your UI, and stop listening after that.
+- **One socket per QR.** The URL is tied to a specific QR/device ID.

@@ -1,0 +1,49 @@
+---
+title: Go-live checklist
+description: A practical checklist to run through before switching a Fonepay integration to production.
+sidebar:
+  order: 3
+---
+
+Tick every item before you go live.
+
+## Access
+
+- [ ] Production credentials received (not just test ones)
+- [ ] Production base URLs and WebSocket host confirmed in writing
+- [ ] Key registration completed for production (secret key or public key)
+- [ ] Server IP allowlisting done, if required
+
+## Correctness
+
+- [ ] Signatures verified against known values (the tests in this repository are a good template)
+- [ ] Amounts are signed exactly as sent
+- [ ] Each payment attempt creates a **new, unique** reference
+- [ ] Reference is stored with your order **before** calling Fonepay
+- [ ] Order is marked paid only after a server-side status check returns `success`
+- [ ] Paid amount compared with the order total
+- [ ] "Mark paid" is idempotent
+
+## Failure paths
+
+- [ ] Customer cancels the payment in their bank app
+- [ ] Customer closes the page after paying
+- [ ] WebSocket disconnects or is blocked, with polling fallback
+- [ ] Status stays `pending`: timeout and retry behaviour
+- [ ] Fonepay API times out or returns 5xx
+- [ ] Duplicate reference (409) handled
+- [ ] Bank app isn't installed, with a clear message and another bank option
+
+## Security
+
+- [ ] No secrets in front-end code, mobile apps, logs or git history
+- [ ] Secrets in a secrets manager or environment variables
+- [ ] HTTPS and `wss://` only
+
+## Business
+
+- [ ] Tax refund (IRD) reporting understood, and implemented if it applies (Dynamic QR)
+- [ ] Reconciliation process agreed with Fonepay or your bank
+- [ ] Refund process agreed (the documents don't cover refunds through the API)
+- [ ] Brand rules followed for Checkout by Fonepay (see [brand guidelines](../../fonepay/checkout/brand-guidelines/))
+- [ ] Support contact for failed payments known to your team

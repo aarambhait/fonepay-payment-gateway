@@ -1,0 +1,65 @@
+---
+title: Troubleshooting
+description: Fix common Fonepay integration errors, including Data Validation Failed, signature mismatches and missing WebSocket events.
+sidebar:
+  order: 1
+---
+
+## "Data Validation Failed" (Dynamic QR)
+
+The HMAC you sent doesn't match the one Fonepay computed. Work through this list:
+
+1. **Wrong key.** Use the **secret key** from your merchant profile page, in the same environment (dev vs live) as your request.
+2. **Wrong order.** QR: `AMOUNT,PRN,MERCHANT-CODE,REMARKS1,REMARKS2`. Status: `PRN,MERCHANT-CODE`. Tax refund has its own order. See [Authentication](../../fonepay/dynamic-qr/authentication/).
+3. **Value mismatch.** The signed `amount` must be the same string as the body's `amount`. `"14"` and `"14.00"` are different.
+4. **Encoding.** Don't URL-encode the message. Don't add spaces after commas.
+5. **Tax fields.** If the body has `taxAmount` and `taxRefund`, the message needs them too. If it doesn't, the message mustn't have them.
+6. **Characters.** Sign UTF-8 bytes. Beware of trailing whitespace or newlines in the key (a `.env` file loader can add them).
+7. **Hex case.** Use lowercase hex, as in Fonepay's sample.
+
+Quick check with a known message:
+
+```bash
+printf '%s' '14,PRN-1001,TESTMERCHANT,order 1001,web' | openssl dgst -sha512 -hmac 'test-secret-key'
+```
+
+## "Invalid Merchant Code" or "Invalid username"
+
+Dev and live have **separate** credentials. Make sure the credentials and the base URL belong to the same environment.
+
+## Signature or authorization errors (Checkout)
+
+- **Body mismatch.** Sign the exact bytes you send. Pretty-printed vs minified JSON gives a different signature.
+- **Wrong key format.** The code expects a **PKCS8** private key in Base64 (the `BEGIN PRIVATE KEY` kind). An `BEGIN RSA PRIVATE KEY` (PKCS1) file must be converted: `openssl pkcs8 -topk8 -nocrypt -in old.pem -out private.pem`.
+- **Public key not registered.** Fonepay verifies with the public key it has on file for you. Confirm it was installed for the environment you're calling.
+- **Expired token.** Tokens last 3600 seconds. Log in again.
+- **Double `Bearer`.** `Bearer Bearer eyJ...` fails. See [known issues](../../fonepay/known-issues/).
+
+## 409 "Duplicate reference label"
+
+`referenceLabel` (Checkout) or `prn` (Dynamic QR) must be **unique for every request**, including retries. Generate a new one per attempt, and save which order it belongs to.
+
+## 400 validation errors
+
+`referenceLabel` must be alphanumeric only (no `-` or `_`) and at most 30 characters. `amount` must be between 1 and 9,999,999.
+
+## WebSocket never receives anything
+
+- Use the **exact URL** returned by the API for that QR.
+- Use `wss://`, not `ws://`.
+- Connect **before** the customer pays.
+- Browsers and proxies can close idle sockets. Reconnect, and use the [status API](../../fonepay/checkout/payment-status/) as a fallback.
+
+## "paymentStatus" stays pending
+
+The customer may not have finished, or the QR expired. Poll with a timeout, then show the customer an option to retry with a **new** reference.
+
+## Works in dev but not in live
+
+- Different base URLs, credentials and keys.
+- Your server IPs may need to be allowlisted by Fonepay.
+- Make sure no dev values are baked into your build.
+
+## Still stuck?
+
+Collect the request (**without secrets**), the exact response and your timestamp, then contact [Fonepay](../../getting-started/onboarding/#step-3-contact-fonepay) or your bank. Never paste real secrets into emails, chats or public issues.

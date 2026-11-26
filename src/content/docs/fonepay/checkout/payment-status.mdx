@@ -1,0 +1,70 @@
+---
+title: Payment status
+description: Verify a Checkout by Fonepay payment from your server with the status API.
+sidebar:
+  order: 7
+---
+
+`POST /thirdPartyDynamicQrGetStatus`
+
+Call it from your **server** after a WebSocket event, after the customer returns from the bank app, or on a timer.
+
+Headers: `Content-Type`, `signature` and `Authorization: Bearer <JWT>`. See [Authentication](../authentication/).
+
+## Request
+
+| Field | Type | Required | Rules |
+|---|---|---|---|
+| `terminalId` | string | Yes | Not blank, up to 16 characters |
+| `referenceLabel` | string | Yes | Alphanumeric only. The label you used to generate the QR |
+
+```json
+{ "terminalId": "<terminal-id>", "referenceLabel": "REF003" }
+```
+
+## Response
+
+```json
+{
+  "prn": "REF003",
+  "merchantCode": "<terminal-id>",
+  "paymentStatus": "success",
+  "fonepayTraceId": 3301232,
+  "requestedAmount": "100.00",
+  "totalTransactionAmount": "100.00",
+  "paymentMessage": "Payment success"
+}
+```
+
+| Field | Description |
+|---|---|
+| `paymentStatus` | `success`, `pending` or `failed` |
+| `fonepayTraceId` | Fonepay's transaction ID. Store it for reconciliation |
+| `requestedAmount` | What you asked to collect |
+| `totalTransactionAmount` | What the customer paid |
+| `paymentMessage` | Human-readable status |
+
+Before marking an order as paid, check that **`paymentStatus` is `success`** and that **`totalTransactionAmount` equals the order total** you stored.
+
+## Errors
+
+| HTTP | Body | Cause |
+|---|---|---|
+| `409` | `{ "message": "Terminal detail not found", "status": 409 }` | Wrong `terminalId` |
+| `500` | `{ "message": "An unexpected error occurred", "status": 500 }` | Documented for an invalid reference label. Check your `referenceLabel` |
+
+Also make sure your token is unexpired and your signature is valid.
+
+## Code
+
+```ts
+const status = await getPaymentStatus(config, token, terminalId, "REF003");
+
+if (status.paymentStatus === "success") {
+  await markOrderPaid("REF003");
+}
+```
+
+:::tip[Polling]
+A sensible default: poll every 3 seconds for the first minute, then every 10 seconds until your QR expires. Stop on `success` or `failed`.
+:::

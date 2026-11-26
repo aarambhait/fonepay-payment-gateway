@@ -1,0 +1,77 @@
+---
+title: Checkout overview
+description: How Checkout by Fonepay (intent flow) works across web and mobile, and the environments and endpoints involved.
+sidebar:
+  order: 1
+---
+
+**Checkout by Fonepay** lets customers pay by choosing their bank in your checkout and approving the payment inside that bank's app. On desktop, you show a QR instead.
+
+This guide follows Fonepay's **Checkout Intent Flow v1.10 (May 2026)**.
+
+## Customer journey
+
+1. The customer reaches your checkout and clicks **Pay with Fonepay**.
+2. They choose **Pay via Mobile Banking App**.
+3. Your UI lists supported banks (from the [bank list API](../bank-list/)).
+4. They pick a bank and are redirected into that bank's app with a [deep link](../mobile-deep-links/).
+5. They pick a debit account and approve or reject the payment.
+6. Fonepay sends the result to your [WebSocket](../websocket/). Your server [confirms it](../payment-status/).
+
+## Integration flow
+
+```text
+Merchant server              Merchant web/app                 Fonepay          Bank app
+     | 1. login (JWT) --------------------------------------->  |
+     | 2. GET banks/list ------------------------------------->  |
+     | 3. POST generate-intent-qr ---------------------------->  |
+     |<------- qrMessage + websocketId -------------------------|
+     |                              | 4. open WebSocket -------->|
+     |                              | 5. deep link ----------------------------->|
+     |                              |                            |<-- approve ---|
+     |                              |<-- paymentSuccess ---------|
+     | 6. POST thirdPartyDynamicQrGetStatus ------------------->  |
+     |<------ paymentStatus ------------------------------------|
+```
+
+| Step | Guide |
+|---|---|
+| Sign requests and log in | [Authentication](../authentication/) |
+| List banks | [Bank list](../bank-list/) |
+| Create the payment QR | [Generate intent QR](../generate-intent-qr/) |
+| Open the bank app | [Mobile deep links](../mobile-deep-links/) |
+| Receive the result | [WebSocket](../websocket/) |
+| Confirm it | [Payment status](../payment-status/) |
+| Look and feel | [Brand guidelines](../brand-guidelines/) |
+
+## Environments
+
+| | Value |
+|---|---|
+| UAT / dev base | `https://dev-external-gateway-new.fonepay.com/merchantThirdparty/api/merchant/third-party/v2` |
+| Production base | **Not stated in the document. Ask Fonepay.** |
+
+:::caution[URL confusion]
+Fonepay's PDF shows curl examples against `https://uat-new-merchant-api.fonepay.com/...` and says they "may not work due to change of base url in uat environment". Its Postman collection uses the `dev-external-gateway-new` host above. Confirm the correct UAT URL with Fonepay. See [known issues](../../known-issues/).
+:::
+
+All endpoints below are relative to the base above.
+
+| Purpose | Method and path |
+|---|---|
+| Log in | `POST /login` |
+| Bank list | `GET /banks/list` |
+| Create payment QR | `POST /generate-intent-qr` |
+| Payment status | `POST /thirdPartyDynamicQrGetStatus` |
+
+## Three headers you will see everywhere
+
+| Header | Value |
+|---|---|
+| `Content-Type` | `application/json` |
+| `signature` | `Base64(RSA-SHA256(request body))` |
+| `Authorization` | `Bearer <JWT>` from login (login itself uses `Basic`) |
+
+## Who does what
+
+The Fonepay document is written for merchants **and** for bank (issuer) app developers. If you are a merchant you only need the merchant-side parts covered here. Issuer-side details (how a banking app registers and handles the deep link) are out of scope.

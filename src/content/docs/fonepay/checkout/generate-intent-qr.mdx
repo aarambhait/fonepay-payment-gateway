@@ -1,0 +1,87 @@
+---
+title: Generate intent QR
+description: Create the payment QR payload for Checkout by Fonepay, with validation rules and error responses.
+sidebar:
+  order: 4
+---
+
+`POST /generate-intent-qr`
+
+Creates the payment payload for one order. Fonepay says to use this API for **all intent-based payments**.
+
+## Headers
+
+`Content-Type: application/json`, `signature` and `Authorization: Bearer <JWT>`. See [Authentication](../authentication/).
+
+## Request body
+
+| Field | Type | Required | Rules |
+|---|---|---|---|
+| `amount` | decimal | Yes | Not null. Minimum 1, maximum 9,999,999 |
+| `billId` | string | Yes | Not blank |
+| `terminalId` | string | Yes | Not blank, up to 16 characters. Your Fonepay terminal ID |
+| `referenceLabel` | string | Yes | Up to 30 characters, **alphanumeric only**, **unique per transaction** |
+| `paymentMode` | string | No | `QR` |
+| `qrType` | string | No | Up to 25 characters. For Checkout by Fonepay it is fixed to `INTENT_QR` |
+
+```json
+{
+  "amount": 100.00,
+  "billId": "BILL-001",
+  "terminalId": "<16-digit-terminal-id>",
+  "paymentMode": "QR",
+  "referenceLabel": "REF003",
+  "qrType": "INTENT_QR"
+}
+```
+
+## Response
+
+```json
+{
+  "qrString": "000201010212...",
+  "qrMessage": "000201010212...",
+  "qrDisplayName": "<merchant name>",
+  "status": "Success",
+  "terminalId": 501,
+  "prn": "<reference>",
+  "terminalName": "<merchant name>",
+  "websocketId": "wss://acquirer-websocket.fonepay.com/merchantEndPoint/<id>/<terminal-id>/Y",
+  "location": "<city>",
+  "fonepayPanNumber": "<terminal-id>"
+}
+```
+
+| Field | Use |
+|---|---|
+| `qrMessage` | The payload. Pass it as `qrPayload` in the [deep link](../mobile-deep-links/), or render it as a QR on desktop |
+| `websocketId` | The URL to open your [WebSocket](../websocket/) on |
+| `prn` | The payment reference. Fonepay says it equals `referenceLabel` |
+
+:::note[Desktop vs mobile]
+Fonepay says: when the app is opened on **desktop**, generate and show the payment QR. On **mobile**, skip showing the QR and deep-link into the bank app instead.
+:::
+
+## Errors
+
+| HTTP | Body | Cause |
+|---|---|---|
+| `409` | `{ "message": "Duplicate reference label", "status": 409 }` | You reused a `referenceLabel` |
+| `400` | `{ "message": { "referenceLabel": "Reference label must contain only alphanumeric characters" }, "status": 400 }` | Validation failed. `message` is an object keyed by field name |
+
+Note that `message` is a **string** in one error and an **object** in the other, so handle both.
+
+## Code
+
+```ts
+const qr = await generateIntentQr(config, token, {
+  amount: 100,
+  billId: "BILL-001",
+  terminalId: "<terminal-id>",
+  referenceLabel: "REF003",
+});
+```
+
+:::tip[Generating references]
+`referenceLabel` is alphanumeric only. No hyphens or underscores. Something like `ORD` + your order ID + a retry counter is a good pattern. Save it before calling Fonepay.
+:::

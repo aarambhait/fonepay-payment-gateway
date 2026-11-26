@@ -1,0 +1,51 @@
+---
+title: WebSocket notifications
+description: Receive QR verified and payment result events for Checkout by Fonepay.
+sidebar:
+  order: 6
+---
+
+Checkout uses the same WebSocket message format as [Dynamic QR](../../dynamic-qr/websocket/). The difference is where the URL comes from.
+
+- **Dynamic QR:** the `thirdpartyQrWebSocketUrl` field.
+- **Checkout:** the **`websocketId`** field of the [generate intent QR](../generate-intent-qr/) response (a `wss://` URL).
+
+Open it before you launch the bank app.
+
+## Messages
+
+```json title="QR verified (customer opened the payment)"
+{
+  "merchantId": 70,
+  "deviceId": "<device-id>",
+  "transactionStatus": "{\"success\":true,\"message\":\"VERIFIED\",\"qrVerified\":true}"
+}
+```
+
+`transactionStatus` is a JSON **string**. Parse it. Then read `paymentSuccess`:
+
+```json title="Payment result (parsed transactionStatus)"
+{
+  "traceId": 17015,
+  "productNumber": "REF003",
+  "amount": "100",
+  "message": "Request Complete",
+  "success": true,
+  "paymentSuccess": true
+}
+```
+
+```ts
+import { parseSocketMessage } from "./fonepay-dynamic-qr.ts"; // same format for both products
+
+const event = parseSocketMessage(String(frame.data));
+if (event.kind === "payment") await confirmOnServer(event.prn);
+```
+
+## Remember
+
+:::danger[Verify with the status API]
+Fonepay's Checkout document says the merchant backend calls the status API to "double check and verify the final status officially". Do not fulfil an order from the WebSocket message alone. See [Payment status](../payment-status/).
+:::
+
+If the socket never delivers, poll the status API instead.

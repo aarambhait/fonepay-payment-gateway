@@ -1,0 +1,49 @@
+---
+title: Tax refund reporting
+description: Report invoice and tax details for a Dynamic QR payment so Fonepay can pass them to IRD.
+sidebar:
+  order: 6
+---
+
+Fonepay's document asks merchants to call this API **after a successful payment** so that information can be provided to the IRD (Inland Revenue Department) **on the next day**. Ask Fonepay or your bank whether this applies to your business.
+
+`POST {apiBase}/thirdPartyPostTaxRefund`
+
+## Request body
+
+| Field | Format | Length | Required | Notes |
+|---|---|---|---|---|
+| `fonepayTraceId` | numeric | | Yes | From the status API (`fonepayTraceId`) or the WebSocket payment message (`traceId`) |
+| `transactionAmount` | numeric | 1-10 | Yes | Amount paid |
+| `merchantPRN` | string | 1-20 | Yes | The `prn` you used for the QR |
+| `invoiceNumber` | string | 1-50 | Yes | Your invoice number. **Must be unique** |
+| `invoiceDate` | string | 10 | Yes | **Nepali (BS) date**, `YYYY.MM.DD`, for example `2076.09.29` |
+| `merchantCode` | string | 1-15 | Yes | Provided by Fonepay |
+| `dataValidation` | string | | Yes | HMAC-SHA512, see below |
+| `username` / `password` | string | | Yes | Provided by Fonepay |
+
+### Signature message
+
+```text
+fonepayTraceId,merchantPRN,invoiceNumber,invoiceDate,transactionAmount,merchantCode
+```
+
+Note that this order **differs** from the QR request. See [Authentication](../authentication/).
+
+## Responses
+
+```json title="Success"
+{ "fonepayTraceId": 35132, "message": "Tax Refund Request Sucess", "success": true }
+```
+
+```json title="Error"
+{ "documentation": "Merchant request Exception", "errorCode": 406, "message": "Invoice Number already exists." }
+```
+
+## Tax fields when generating the QR
+
+You can also send `taxAmount` and `taxRefund` when you [generate the QR](../generate-qr/). Both must be included in the signature, and `taxRefund` can't exceed `taxAmount`, which can't exceed `amount`.
+
+:::note[Check the BS date]
+`invoiceDate` is in the Bikram Sambat calendar, not the Gregorian one. Convert the date properly before sending, and don't send `2026-...` values.
+:::

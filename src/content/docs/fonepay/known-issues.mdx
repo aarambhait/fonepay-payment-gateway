@@ -1,0 +1,57 @@
+---
+title: Known issues and open questions
+description: Contradictions and gaps in Fonepay's integration documents, and the questions to ask Fonepay.
+sidebar:
+  order: 99
+---
+
+Vendor documents are written by busy people, and Fonepay's are no exception. This page lists places where the source documents **contradict themselves or are silent**, how these guides handled each, and what to ask Fonepay.
+
+Sources: Dynamic QR "Merchant Integration through Device for online QR" and Checkout Intent Flow **v1.10 (20 May 2026)**.
+
+:::tip[Found a new one, or got an answer from Fonepay?]
+Please [open an issue or pull request](../../about/contributing/) so everyone benefits.
+:::
+
+## Dynamic QR
+
+| # | Issue | What these docs do | Ask Fonepay |
+|---|---|---|---|
+| 1 | The **live** API URL appears both **with** and **without** `/convergent-merchant-web/` | Shows the version without, as in the endpoint section | What is the exact production URL? |
+| 2 | The Java sample prints **uppercase** hex (`0123456789ABCDEF`), but the sample signature is **lowercase** | Uses lowercase | Is `dataValidation` case-insensitive? |
+| 3 | Live WebSocket URL is only given as `wss://ws.fonepay.com/` in one note | Uses the full path shown in the endpoint section, and tells you to use the URL from the response | Confirm the production WebSocket host |
+| 4 | The tax refund section's parameter table is titled "QR Request Parameters" | Treats it as the tax refund request | None |
+| 5 | Credentials (`username`, `password`) travel in **every request body** | Strongly recommends server-side calls only | Is there a token-based alternative? |
+| 6 | The WebSocket is described as "between server and browser", but no authentication for the socket is described | Treats events as hints and verifies via status API | Is the socket URL a secret? Does it expire? |
+| 7 | Response strings contain typos (`successfull`, `Sucess`) | Tells you not to match on message text | None |
+| 8 | The status API does not return the paid amount | Recommends storing the amount per `prn` | Can the amount be added? |
+
+## Checkout by Fonepay
+
+| # | Issue | What these docs do | Ask Fonepay |
+|---|---|---|---|
+| 1 | **No production URL** is given | Marks it as unknown | What is the production base URL? |
+| 2 | Two different UAT hosts appear: `uat-new-merchant-api.fonepay.com` (PDF) and `dev-external-gateway-new.fonepay.com/merchantThirdparty` (Postman collection). The PDF itself warns its curl examples may not work | Uses the Postman host | Which UAT URL is correct and stable? |
+| 3 | The PDF's login URL contains `merchantDetailsForThirdParty/v2/login`, while other endpoints use `third-party/v2/...` | Uses `/login` under the same base as the other endpoints | What is the exact login path? |
+| 4 | The sample `accessToken` already contains the word `Bearer`, while the header table says to add `Bearer ` as a prefix | Code adds the prefix only if missing | None |
+| 5 | A `refreshToken` is returned, but no refresh endpoint exists in the document | Tells you to log in again | Is there a refresh endpoint? |
+| 6 | How to **register your public key** is not described. The Postman script mentions a "Generate Key Pair" step that is missing from the collection | Gives `openssl` commands and says to ask Fonepay | Which format and channel do you want for the public key? |
+| 7 | `prn` is "same as `referenceLabel`", but the sample request uses `REF003` while the sample response shows `REFu7o80y11` | Tells you to store both and look up by `referenceLabel` | Does Fonepay ever modify the label? |
+| 8 | Section 9.5 refers to `thirdpartyQRWebSocketUrl`, but the intent QR response has `websocketId` | Uses `websocketId` | None |
+| 9 | Section 9.5 sample uses `ws://` while the response sample uses `wss://` | Always use `wss://` | None |
+| 10 | The signature requirement for the `GET /banks/list` request is marked optional with no payload definition | Sends no signature | Is a signature ever required for GET? |
+| 11 | How to encode `qrPayload` in the deep link is not stated, and the sample has no special characters | URL-encodes | Does the bank app expect encoded or raw payloads? |
+| 12 | The **status** endpoint reuses the name `thirdPartyDynamicQrGetStatus` but takes different parameters from the Dynamic QR product (`terminalId` + `referenceLabel` instead of `prn` + `merchantCode` + HMAC) | Documents each separately | None |
+| 13 | Minimum logo sizes conflict (45 px / 35 px / 30 px) | Documents all three | Which size applies to you? |
+| 14 | The sample request for generate-intent-qr contains `" INTENT_QR "` with spaces, and the table says alphanumeric plus underscore only | Uses `INTENT_QR` without spaces | None |
+
+## Not covered by the documents we have
+
+- Rate limits and timeouts
+- QR and session expiry times
+- Refunds and reversals through the API
+- Settlement and reconciliation reports
+- Production go-live and certification steps
+- Webhook-style callbacks (beyond WebSocket)
+
+Ask Fonepay or your bank about each of these before you go live.
